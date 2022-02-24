@@ -108,6 +108,9 @@ struct ContentView: View {
             await loadNewJoke()
             
             print("I tried to load a new joke")
+            
+            // Load Favourites from the file saved on the device
+            loadFavourites()
         }
         
         // React to changes of state for the app (foreground, background, inactive)
@@ -119,6 +122,10 @@ struct ContentView: View {
                 print ("Active")
             } else {
                 print ("Background")
+                
+                // Permanently save the list of tasks
+                persistFavourites()
+                
             }
             
         }
@@ -174,6 +181,73 @@ struct ContentView: View {
             print(error)
         }
 
+    }
+    
+    // Save the data permanently
+    func persistFavourites() {
+        
+        // Get a location under which to save the data
+        let filename = getDocumentsDirectly().appendingPathComponent(savedFavouritesLabel)
+        print(filename)
+        
+        // Try to encode the data in our list of favourites to JSON
+        do {
+        
+            // Create a JSON Encoder object
+            let encoder = JSONEncoder()
+            
+            // Configure the Encoder to "pretty print" the JSON
+            encoder.outputFormatting = .prettyPrinted
+            
+            // Encode the list of favourites we've collected
+            let data = try encoder.encode(favourites)
+            
+            // Write the JSON to a file in the filename location we came up with earlier
+            try data.write(to: filename, options: [.atomicWrite, .completeFileProtection])
+            
+            // See the data that was written
+            print("Saved data to the Documents directory successfully.")
+            print("==========")
+            print(String(data: data, encoding: .utf8)!)
+            
+        } catch {
+            print("Unable to write list of favourites to the Documents directory")
+            print("=========")
+            print(error.localizedDescription)
+        }
+        
+    }
+    
+    // Loads the data that was saved to the device
+    // Loading our favourites...
+    func loadFavourites() {
+        
+        
+        // Get a location under which to load the data
+        let filename = getDocumentsDirectly().appendingPathComponent(savedFavouritesLabel)
+        print(filename)
+        
+        // Attempt to load the data
+        do {
+            
+            // Load the raw data
+            let data = try Data(contentsOf: filename)
+            
+            // See the data that was read
+            print("Read data to the Documents directory successfully.")
+            print("==========")
+            print(String(data: data, encoding: .utf8)!)
+            
+            // Decode the JSON into Swift native data structures
+            // NOTE: We use [DadJoke] since we are loading into a list (array)
+            favourites = try JSONDecoder().decode([DadJoke].self, from: data)
+            
+        } catch {
+            // What went wrong?
+            print("Could not load the data from the stored JSON file")
+            print("=======")
+            print(error.localizedDescription)
+        }
     }
     
 }
